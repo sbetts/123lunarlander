@@ -17,12 +17,14 @@ blackColor = pygame.Color(0, 0, 0)
 greyColor = pygame.Color(215, 215, 215)
 gameWinLoseText = pygame.Surface((0, 0))
 landerYVelocityText = pygame.Surface((0, 0))
+landerFuelText = pygame.Surface((0, 0))
 gameFont = pygame.font.Font(None, 18)
 
 
 landerPosX = 320
 landerPosY = 80
 
+landerFuel = 400
 landerXVelocity = 0
 landerYVelocity = 0.1
 landerXAcceleration = 0
@@ -88,6 +90,8 @@ while True:
 
     landerYVelocityText = gameFont.render('Lander Y Velocity: ' + str(-landerYVelocity), True, greyColor)
     windowSurfaceObj.blit(landerYVelocityText, (400, 30))
+    landerFuelText = gameFont.render('Lander Fuel: ' + str(landerFuel), True, greyColor)
+    windowSurfaceObj.blit(landerFuelText, (400, 50))
 
     if pygame.event.peek(KEYDOWN) == False:
         keyIsDown = False
@@ -113,17 +117,19 @@ while True:
 
     if keyIsDown == True:
         if downKey == 1:
-            if landerAngle >= 0 and landerAngle <= 90:
+            if landerAngle >= 0 and landerAngle <= 90 and landerFuel > 0:
                 xValue = landerAngle / 90.0
                 landerYVelocity -= (1 - xValue) * 0.15
                 landerXVelocity += 0.3 * -xValue
                 landerYAcceleration = 0
+                landerFuel = landerFuel - 1
                 particleList.append(PropulsionParticle(landerPosX, landerPosY, landerXVelocity, landerYVelocity))
-            if landerAngle < 0 and landerAngle >= -90:
+            if landerAngle < 0 and landerAngle >= -90 and landerFuel > 0:
                 xValue = landerAngle / 90.0
                 landerYVelocity -= (1 - -xValue) * 0.15
                 landerXVelocity += 0.3 * -xValue
                 landerYAcceleration = 0
+                landerFuel = landerFuel - 1
                 particleList.append(PropulsionParticle(landerPosX, landerPosY, landerXVelocity, landerYVelocity))
         elif downKey == 2:
             landerAngle += 5
