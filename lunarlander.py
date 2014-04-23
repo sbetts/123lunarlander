@@ -88,7 +88,10 @@ while True:
     if gameOver == True:
         windowSurfaceObj.blit(gameWinLoseText, (30, 30))
 
-    landerYVelocityText = gameFont.render('Lander Y Velocity: ' + str(-landerYVelocity), True, greyColor)
+    if landerYVelocity > 1:
+        landerYVelocityText = gameFont.render('Lander Y Velocity: ' + str(-landerYVelocity), True, (255, 0, 0))
+    else:
+        landerYVelocityText = gameFont.render('Lander Y Velocity: ' + str(-landerYVelocity), True, greyColor)
     windowSurfaceObj.blit(landerYVelocityText, (400, 30))
     landerFuelText = gameFont.render('Lander Fuel: ' + str(landerFuel), True, greyColor)
     windowSurfaceObj.blit(landerFuelText, (400, 50))
