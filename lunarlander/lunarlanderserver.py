@@ -44,6 +44,9 @@ groundRectList = [pygame.Rect(0, 400, 50, 80), pygame.Rect(50, 450, 65, 30), pyg
                   pygame.Rect(345, 375, 155, 105), pygame.Rect(500, 360, 100, 120), pygame.Rect(600, 460, 40, 20)]
 
 
+startingPointList = [320, 280, 360, 400, 240, 200, 440, 160, 480, 120, 520]
+startingPointIterator = 0
+
 
 tooFarRightMessage = 'You lose: lander left the playing field.'
 tooFarLeftMessage = 'You lose: lander left the playing field.'
@@ -62,8 +65,9 @@ class MyHandler(Handler):
         global playerIDCounter
         handlerList[playerIDCounter] = self
         playerIDCounter += 1
-        ##landerList[self] = Lander(generateStartingPosX(), generateStartingPosY(), 0, 0, 0, STARTING_LANDER_FUEL)
-        landerList[self] = Lander(320, 80, 0, 0, 0, STARTING_LANDER_FUEL)
+        self.do_send({'playerid':playerIDCounter})
+        landerList[self] = Lander(generateStartingPosX(), 80, 0, 0, 0, STARTING_LANDER_FUEL, playerIDCounter)
+        ##landerList[self] = Lander(320, 80, 0, 0, 0, STARTING_LANDER_FUEL)
         pass
          
     def on_close(self):
@@ -78,7 +82,7 @@ class MyHandler(Handler):
 class Lander:
 
 
-    def __init__(self, startingPosX, startingPosY, startingVelocityX, startingVelocityY, startingAngle, startingFuel):
+    def __init__(self, startingPosX, startingPosY, startingVelocityX, startingVelocityY, startingAngle, startingFuel, playerID):
         self._posX = startingPosX
         self._posY = startingPosY
         self._velocityX = startingVelocityX
@@ -90,6 +94,8 @@ class Lander:
         self._landerRect = windowSurfaceObj.blit(landerSurfaceObj, (self._posX, self._posY))
         self._shouldMove = True
         self._hasWon = False
+        self._playerID = playerID
+        self._lossMessage = ''
         self._command = 0
 
 
@@ -136,9 +142,19 @@ class Lander:
     def setWon(self, hasWon):
         self._hasWon = hasWon
 
+    def getPlayerID(self):
+        return self._playerID
+
 
     def setCommand(self, command):
         self._command = command
+
+
+    def setLossMessage(self, lossMessage):
+        self._lossMessage = lossMessage
+
+    def getLossMessage(self):
+        return self._lossMessage
 
 
     def update(self):
@@ -226,7 +242,8 @@ def checkForLanding(lander, landerLoc):
         playerLoses(lander, tooFarLeftMessage)
         return True
     elif lander.getRect().collidelist(groundRectList) != -1:
-        if lander.getVelocityY >= 1:
+        if lander.getVelocityY() >= 1:
+            print(lander.getVelocityY())
             playerLoses(lander, tooFastMessage)
             return True
         elif lander.getAngle() > 5:
@@ -238,9 +255,9 @@ def checkForLanding(lander, landerLoc):
         else:
             if groundRectList[lander.getRect().collidelist(groundRectList)].collidepoint(lander.getRect().bottomleft):
                 if groundRectList[lander.getRect().collidelist(groundRectList)].collidepoint(lander.getRect().bottomright):
-                    ##PLAYER WINS HERE
+                    lander.setLossMessage('YOU WIN!')
                     lander.setMoving(False)
-                    lander.hasWon(True)
+                    lander.setWon(True)
                 else:
                     playerLoses(lander, unevenTerrainMessage)
                     return True
@@ -251,17 +268,26 @@ def checkForLanding(lander, landerLoc):
 
 def playerLoses(lander, lossMessage):
     if lander.getHasWon() == False:
-        pass
-        ##PLAYER GAME OVER GOES HERE
+        lander.setLossMessage(lossMessage)
 
 
 def destroyLander(landerLoc):
-    ##LANDER EXPLOSION CODE GOES HERE
+    for x in range(36):
+        particleList.append(PropulsionParticle(landerList[landerLoc].getPosX(), landerList[landerLoc].getPosY(), 0, 7))
+        particleList.append(PropulsionParticle(landerList[landerLoc].getPosX() + 5, landerList[landerLoc].getPosY() - 10, 0, 7))
+        particleList.append(PropulsionParticle(landerList[landerLoc].getPosX() - 5, landerList[landerLoc].getPosY() - 10, 0, 7))
     del landerList[landerLoc]
     print('Successfully destroyed lander.')
     if len(landerList) == 0:
         pass
         ##SERVER GAME OVER GOES HERE
+
+
+def generateStartingPosX():
+    global startingPointIterator
+    thisValue = startingPointList[startingPointIterator]
+    startingPointIterator += 1
+    return thisValue
 
 
 
@@ -270,7 +296,7 @@ def generateGameStateForClients(thisLanderList, thisParticleList):
     particleListForClients = []
     gameState = {}
     for x in thisLanderList:
-        landerListForClients.append([thisLanderList[x].getAngle(), thisLanderList[x].getPosX(), thisLanderList[x].getPosY()])
+        landerListForClients.append([thisLanderList[x].getAngle(), thisLanderList[x].getPosX(), thisLanderList[x].getPosY(), thisLanderList[x].getFuel(), thisLanderList[x].getPlayerID(), thisLanderList[x].getLossMessage(), thisLanderList[x].getVelocityY()])
     gameState['landerList'] = landerListForClients
     for x in thisParticleList:
         particleListForClients.append([x.getPosX(), x.getPosY()])
@@ -319,10 +345,11 @@ while True:
     for x in landerList:
         if checkForLanding(landerList[x], x):
             landersToBeDestroyed.add(x)
-    for x in landersToBeDestroyed:
-        destroyLander(x)
     currentGameStateForClients = generateGameStateForClients(landerList, particleList)
     sendGameStateToClients(currentGameStateForClients)
+    for x in landersToBeDestroyed:
+        destroyLander(x)
     
-    pygame.display.update()
+    
+    ##pygame.display.update()
     fpsClock.tick(30)

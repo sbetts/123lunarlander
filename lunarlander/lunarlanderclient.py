@@ -24,6 +24,8 @@ blackColor = pygame.Color(0, 0, 0)
 greyColor = pygame.Color(215, 215, 215)
 gameWinLoseText = pygame.Surface((0, 0))
 gameFont = pygame.font.Font(None, 18)
+landerYVelocityText = pygame.Surface((0, 0))
+
 
 
 
@@ -59,10 +61,17 @@ class Client(Handler):
         should_exit = True
         
     def on_msg(self, msg):
-        global landerList
-        global particleList
-        landerList = msg['landerList']
-        particleList = msg['particleList']
+        if msg.has_key('playerid'):
+            self._playerID = msg['playerid']
+        else:
+            global landerList
+            global particleList
+            landerList = msg['landerList']
+            particleList = msg['particleList']
+
+
+    def getPlayerID(self):
+        return self._playerID
 
 
 
@@ -114,11 +123,15 @@ thread = Thread(target=periodic_poll)
 thread.daemon = True
 thread.start()
 
+has_lander = False
+game_over = False
+
 
 while True:
     if should_exit == True:
-        print('**** Disconnected from server ****')
-        sys.exit()
+        ##print('**** Disconnected from server ****')
+        ##sys.exit()
+        pass
     windowSurfaceObj.fill(blackColor)
 
 
@@ -130,6 +143,27 @@ while True:
     
     for x in landerList:
         windowSurfaceObj.blit(pygame.transform.rotate(landerSurfaceObj, x[0]), (x[1], x[2]))
+
+    for x in landerList:
+        if x[4] == client.getPlayerID():
+            has_lander = True
+            myLander = x
+
+    if has_lander:
+            if myLander[5] != '':
+                game_over = True
+                gameWinLoseText = gameFont.render(myLander[5], True, greyColor)
+
+    if has_lander:
+        landerFuelText = gameFont.render('Lander Y Velocity: ' + str(myLander[6]), True, greyColor)
+        windowSurfaceObj.blit(landerFuelText, (400, 30))
+
+    if game_over:
+        windowSurfaceObj.blit(gameWinLoseText, (30, 30))
+
+    if has_lander:
+        landerFuelText = gameFont.render('Lander Fuel: ' + str(myLander[3]), True, greyColor)
+        windowSurfaceObj.blit(landerFuelText, (400, 50))
 
     userCommand = checkForKeyPress()
 
