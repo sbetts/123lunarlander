@@ -148,7 +148,7 @@ def sendCommandToServer(client, command):
 
 def beginGame():
 
-    host, port = 'localhost', 8888
+    host, port = '169.234.87.121', 8888
     client = Client(host, port)
 
     has_lander = False
